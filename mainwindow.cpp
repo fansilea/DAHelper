@@ -399,7 +399,7 @@ void MainWindow::on_checkBoxAutoRun_stateChanged(int arg1)
 
 void MainWindow::readConfig(){
 
-    Xml xml("da.xml");
+    Xml xml(QApplication::applicationDirPath() + "/da.xml");
     QMap<QString, QString> data;
     bool autoRun=false;
     bool showPanel=false;
@@ -465,7 +465,7 @@ void MainWindow::readConfig(){
 
 void MainWindow::saveConfig()
 {
-    Xml xml("da.xml");
+    Xml xml(QApplication::applicationDirPath() + "/da.xml");
     QMap<QString, QString> data;
 
     xml.init(false);
