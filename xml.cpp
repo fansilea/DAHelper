@@ -15,7 +15,6 @@ bool Xml::init(bool read, QString rootNodeName)
 {
     QFile file(fileName);
 
-    qDebug() << "fileName" << fileName;
     if(read){
         if(file.exists() != true){
             return false;

@@ -23,7 +23,6 @@ Dialog::Dialog(QWidget *parent) :
     ui->labelClockOff->setStyleSheet("color:yellow");
     ui->labelUrl->setOpenExternalLinks(true);
     ui->labelUrl->setText(tr("<style>a{text-decoration: none} </style><a href=\"http://personalinfo.sunmedia.com.cn/Attendance.aspx\">详情"));
-    //setStyleSheet("background-color:black");
 
     this->setGeometry(QApplication::desktop()->width()-this->width()+10, 30, width(), height());
     HWND hdesktop = findDesktopIconWnd();
@@ -40,7 +39,7 @@ Dialog::Dialog(QWidget *parent) :
 
     if (QSysInfo::windowsVersion() == QSysInfo::WV_WINDOWS7) {
         //setWindowOpacity(0);
-        this->setAttribute(Qt::WA_TranslucentBackground, true);
+        //this->setAttribute(Qt::WA_TranslucentBackground, true);
         this->setWindowFlags(Qt::FramelessWindowHint|Qt::Tool);
     }
 }
@@ -72,7 +71,7 @@ void Dialog::receiveData(QString data)
         clockOffStr="18:30:00";
     }
 
-    qDebug() << "上班时间" << data << "下班时间" << clockOffStr;
+    qDebug() << "上班时间" << data << ",下班时间" << clockOffStr;
 
     ui->labelClockIn->setText(data);
     ui->labelClockOff->setText(clockOffStr);

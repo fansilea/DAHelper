@@ -13,7 +13,6 @@ DialogAbout::DialogAbout(QWidget *parent) :
     ui->setupUi(this);
 
     ui->textBrowser->setStyleSheet("background-color:rgb(255,132,139,0);border-radius:3px;color:rgb(0,0,0);}");
-    ui->textBrowser->append("<font size=2><a href=\"https://github.com/rechard666/DAHelper.git\">https://github.com/rechard666/DAHelper.git</a></font>");
 }
 
 DialogAbout::~DialogAbout()

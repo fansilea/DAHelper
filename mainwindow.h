@@ -50,11 +50,13 @@ private:
     QTimer timer_newDay;
     QTimer timer_init;
 
+    bool mousePressed;
     bool webAuthed;
-    QString userName;
-    QString password;
     bool todayDoNotRemind;
     bool remindOnlyWorkDay;
+    QPoint mousePressedPos;
+    QString userName;
+    QString password;
 
 private slots:
     void httpGetFinished();
@@ -91,6 +93,9 @@ private:
     void webAutoAuth();
     void saveConfig();
     void readConfig();
+    void mousePressEvent(QMouseEvent *event);
+    void mouseReleaseEvent(QMouseEvent *event);
+    void mouseMoveEvent(QMouseEvent *event);
 };
 
 #endif // MAINWINDOW_H

@@ -47,7 +47,6 @@ void Form::on_hideRemindWindow()
 
 void Form::on_showRemindWindow()
 {
-    qDebug() << "show remind window";
     timer.start();
     this->show();
 }

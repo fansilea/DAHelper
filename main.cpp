@@ -13,7 +13,6 @@ int main(int argc, char *argv[])
     w.setWindowFlags(Qt::FramelessWindowHint);
 
     //设置窗口背景图片
-    //w.setObjectName("settingWindow");
     w.setStyleSheet("QMainWindow#MainWindow{border-image: url(:/images/bg.jpg)}");
 
     //w.show();

@@ -5,6 +5,7 @@
 #include <QNetworkAccessManager>
 #include <QMessageBox>
 #include <QSettings>
+#include <QMouseEvent>
 #include "xml.h"
 #include "dialogabout.h"
 
@@ -44,6 +45,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_init()
 {
+    mousePressed = false;
     timer_init.stop();
 
     //向信息面板显示打卡查询结果
@@ -67,10 +69,9 @@ void MainWindow::on_init()
     }
 
     ui->checkBoxPanel->setChecked(true);
-    ui->statusBar->setStyleSheet("color:rgb(0, 197, 95); font: 75 9pt 微软雅黑");
+    ui->statusBar->setStyleSheet("color:blue");
     ui->labelTitle->setStyleSheet("color:blue");
-    ui->comboBoxHour->setEditText("08");
-    ui->comboBoxSec->setEditText("30");
+    ui->comBoxRemindTime->setEditText("08:30:00");
     ui->lineEditName->setStyleSheet("background:transparent;border-width:0;border-style:outset");
     ui->lineEditPwd->setStyleSheet("background:transparent;border-width:0;border-style:outset");
 
@@ -189,6 +190,10 @@ void MainWindow::httpPostFinished()
     qDebug() << "date:" << date << "name:" << name << "short name:" << shortName << "id:" << id << "clock in:" << clockIn << "clock off:" << clockOff;
 
     //显示查询结果
+    if(clockIn.isEmpty()){
+        return;
+    }
+
     emit sendData(clockIn);
 
     qint32 nextIntervalInSec = 0;
@@ -200,7 +205,7 @@ void MainWindow::httpPostFinished()
 
             //弹出提醒框
             if(clockIn == "未刷卡" && todayDoNotRemind == false){
-               QDateTime remindTime = QDateTime::fromString(ui->comboBoxHour->currentText()+":"+ui->comboBoxSec->currentText()+"00", "hh:mm:ss");
+               QDateTime remindTime = QDateTime::fromString(ui->comBoxRemindTime->currentText().trimmed(), "hh:mm:ss");
                QString currentTimeStr = QDateTime::currentDateTime().toString("hh:mm:ss");
                QDateTime currentTime = QDateTime::fromString(currentTimeStr, "hh:mm:ss");
                if(currentTime >= remindTime){
@@ -213,7 +218,7 @@ void MainWindow::httpPostFinished()
 
     //计算下一次查询时间
     if(nextIntervalInSec == 0){
-        qint32 remindTimeInSec = QDateTime::fromString(ui->comboBoxHour->currentText()+":"+ui->comboBoxSec->currentText()+"00", "hh:mm:ss").time().msecsSinceStartOfDay()/1000;
+        qint32 remindTimeInSec = QDateTime::fromString(ui->comBoxRemindTime->currentText().trimmed(), "hh:mm:ss").time().msecsSinceStartOfDay()/1000;
         qint32 secsSinceStartOfDay = QTime::currentTime().msecsSinceStartOfDay()/1000;
         qint32 timerIntervalInSec = 24 * 3600 - secsSinceStartOfDay + remindTimeInSec;
         nextIntervalInSec = timerIntervalInSec;        
@@ -225,7 +230,6 @@ void MainWindow::httpPostFinished()
 
 void MainWindow::on_pushButtonTray_clicked()
 {
-    qDebug() << "checked";
     //右击任务栏通知图标退出选项
     if(QSystemTrayIcon::isSystemTrayAvailable()){
         this->hide();
@@ -270,7 +274,7 @@ void MainWindow::webAutoAuth()
     if(ui->checkBoxWebAuth->isChecked() == false){
         return;
     }
-    qDebug() << "start web auth";
+
     //post
     QNetworkRequest request;
     request.setUrl(QUrl("http://172.28.253.252/ac_portal/login.php"));
@@ -344,7 +348,6 @@ void MainWindow::on_checkBoxPanel_stateChanged(int arg1)
 {
     (void)arg1;
 
-    qDebug() << "panel ischecked" << ui->checkBoxPanel->isChecked();
     if(ui->checkBoxPanel->isChecked()){
         dlg.show();
     }else{
@@ -409,9 +412,7 @@ void MainWindow::readConfig(){
     if(xml.init() == true){
         xml.subNode("webauth", data);
         if(data.isEmpty() == false){
-            qDebug() << "username" << data["username"];
-            qDebug() << "pwd" << data["password"];
-            qDebug() << "enable" << data["enable"];
+            qDebug() << "webauth: username" << data["username"] << ",pwd" << data["password"] << ",enable" << data["enable"];
             if(data["username"].isEmpty() == false && data["password"].isEmpty() == false){
                 ui->lineEditName->setText(data["username"]);
                 ui->lineEditPwd->setText(data["password"]);
@@ -424,23 +425,20 @@ void MainWindow::readConfig(){
         data.clear();
         xml.subNode("remind", data);
         if(data.isEmpty() == false){
-            qDebug() << "workdayonly" << data["workdayonly"];
-            qDebug() << "remind time" << data["remindtime"];
+            qDebug() << "remind: workdayonly" << data["workdayonly"] << ",remindtime" << data["remindtime"];
             if(data["workdayonly"] == "true"){
                 workDayOnly = true;
             }
             if(data["remindtime"].isEmpty() == false){
-                QDateTime time = QDateTime::fromString(data["remindtime"], "hh:mm:ss");
-                ui->comboBoxHour->setCurrentText(time.toString("hh"));
-                ui->comboBoxSec->setCurrentText(time.toString("mm"));
+                QString placeholders("     ");
+                ui->comBoxRemindTime->setCurrentText(placeholders + data["remindtime"]);
             }
         }
 
         data.clear();
         xml.subNode("other", data);
         if(data.isEmpty() == false){
-            qDebug() << "auto run" << data["autorun"];
-            qDebug() << "show panel" << data["panel"];
+            qDebug() << "other: autorun" << data["autorun"] << ",showpanel" << data["panel"];
             if(data["autorun"] == "true"){
                 QSettings reg("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",QSettings::NativeFormat);
                 if(reg.value("DAHelper").toString() != QApplication::applicationFilePath()){
@@ -457,10 +455,16 @@ void MainWindow::readConfig(){
         workDayOnly = true;
     }
 
+    //获取当前登陆用户名
+    if(userName.isEmpty()){
+        userName = QStandardPaths::writableLocation(QStandardPaths::HomeLocation).section("/", -1, -1);
+    }
+
     ui->checkBoxAutoRun->setChecked(autoRun);
     ui->checkBoxPanel->setChecked(showPanel);
     ui->checkBoxWebAuth->setChecked(webAuth);
     ui->checkBoxRemindOnlyWorkDay->setChecked(workDayOnly);
+    ui->lineEditName->setText(userName);
 }
 
 void MainWindow::saveConfig()
@@ -472,8 +476,10 @@ void MainWindow::saveConfig()
 
     if(ui->lineEditName->text().isEmpty() == false &&
        ui->lineEditPwd->text().isEmpty() == false){
-        data.insert("username", ui->lineEditName->text());
-        data.insert("password", ui->lineEditPwd->text());
+        userName = ui->lineEditName->text().simplified();
+        password = ui->lineEditPwd->text().simplified();
+        data.insert("username", userName);
+        data.insert("password", password);
         if(ui->checkBoxWebAuth->isChecked()){
             data.insert("enable", "true");
         }
@@ -481,7 +487,7 @@ void MainWindow::saveConfig()
     }
 
     data.clear();
-    data.insert("remindtime", ui->comboBoxHour->currentText()+":" + ui->comboBoxSec->currentText()+":00");
+    data.insert("remindtime", ui->comBoxRemindTime->currentText().trimmed());
     if(ui->checkBoxRemindOnlyWorkDay->isChecked()){
         data.insert("workdayonly", "true");
     }
@@ -510,4 +516,24 @@ void MainWindow::on_pushButtonAbout_clicked()
 {
    DialogAbout about(this);
    about.exec();
+}
+
+void MainWindow::mousePressEvent(QMouseEvent *event)
+{
+    mousePressed = true;
+    mousePressedPos = event->pos();
+}
+
+void MainWindow::mouseReleaseEvent(QMouseEvent *event)
+{
+    (void*)event;
+    mousePressed = false;
+}
+
+void MainWindow::mouseMoveEvent(QMouseEvent *event)
+{
+    if(mousePressed && (event->buttons() == Qt::LeftButton)){
+        QPoint newPos(QCursor::pos() - mousePressedPos);
+        this->move(newPos);
+    }
 }
