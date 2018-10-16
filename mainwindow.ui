@@ -140,21 +140,19 @@
      <bool>false</bool>
     </property>
    </widget>
-   <widget class="QComboBox" name="comBoxRemindTime">
+   <widget class="QComboBox" name="comboBoxRemindStartTime">
     <property name="geometry">
      <rect>
       <x>120</x>
-      <y>160</y>
-      <width>141</width>
-      <height>28</height>
+      <y>170</y>
+      <width>151</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="font">
      <font>
       <family>Times New Roman</family>
       <pointsize>12</pointsize>
-      <weight>50</weight>
-      <bold>false</bold>
      </font>
     </property>
     <property name="mouseTracking">
@@ -170,7 +168,7 @@
      <bool>false</bool>
     </property>
     <property name="toolTip">
-     <string>选择提醒时间之小时</string>
+     <string>从此时刻开始，如果未查询到打卡记录则弹出提醒窗口，默认提醒时间为08:30</string>
     </property>
     <property name="statusTip">
      <string/>
@@ -182,7 +180,7 @@
      <bool>false</bool>
     </property>
     <property name="currentIndex">
-     <number>6</number>
+     <number>0</number>
     </property>
     <property name="maxVisibleItems">
      <number>10</number>
@@ -199,6 +197,11 @@
     <property name="frame">
      <bool>true</bool>
     </property>
+    <item>
+     <property name="text">
+      <string>开始提醒时间</string>
+     </property>
+    </item>
     <item>
      <property name="text">
       <string>     08:00:00</string>
@@ -308,7 +311,7 @@
       <x>360</x>
       <y>70</y>
       <width>121</width>
-      <height>31</height>
+      <height>21</height>
      </rect>
     </property>
     <property name="font">
@@ -342,9 +345,9 @@
     <property name="geometry">
      <rect>
       <x>360</x>
-      <y>110</y>
+      <y>100</y>
       <width>121</width>
-      <height>31</height>
+      <height>21</height>
      </rect>
     </property>
     <property name="font">
@@ -421,7 +424,7 @@
     <property name="geometry">
      <rect>
       <x>330</x>
-      <y>160</y>
+      <y>130</y>
       <width>151</width>
       <height>21</height>
      </rect>
@@ -536,8 +539,127 @@
      <string>关 于</string>
     </property>
    </widget>
+   <widget class="QComboBox" name="comboBoxRemindEndTime">
+    <property name="geometry">
+     <rect>
+      <x>330</x>
+      <y>170</y>
+      <width>151</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Times New Roman</family>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="toolTip">
+     <string>从此时刻开始，到第二天的开始提醒时间之前，不再弹出提醒窗口，默认结束提醒时间为10:00</string>
+    </property>
+    <item>
+     <property name="text">
+      <string>结束提醒时间</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     09:00:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     09:30:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     10:00:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     10:30:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     11:00:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     11:30:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     12:00:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     12:30:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     13:00:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     13:30:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     14:00:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     14:30:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     15:00:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     15:30:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     16:00:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     16:30:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     17:00:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     17:30:00</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>     18:00:00</string>
+     </property>
+    </item>
+   </widget>
    <zorder>checkBoxPanel</zorder>
-   <zorder>comBoxRemindTime</zorder>
+   <zorder>comboBoxRemindStartTime</zorder>
    <zorder>labelTitle</zorder>
    <zorder>lineEditName</zorder>
    <zorder>lineEditPwd</zorder>
@@ -548,6 +670,7 @@
    <zorder>checkBoxAutoRun</zorder>
    <zorder>pushButtonSaveConfig</zorder>
    <zorder>pushButtonAbout</zorder>
+   <zorder>comboBoxRemindEndTime</zorder>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="enabled">

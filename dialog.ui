@@ -94,7 +94,7 @@
     </font>
    </property>
    <property name="text">
-    <string>详情</string>
+    <string>查询</string>
    </property>
   </widget>
   <widget class="QLabel" name="labelOff">

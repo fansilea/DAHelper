@@ -71,7 +71,7 @@ void MainWindow::on_init()
     ui->checkBoxPanel->setChecked(true);
     ui->statusBar->setStyleSheet("color:blue");
     ui->labelTitle->setStyleSheet("color:blue");
-    ui->comBoxRemindTime->setEditText("08:30:00");
+    ui->comboBoxRemindStartTime->setEditText("08:30:00");
     ui->lineEditName->setStyleSheet("background:transparent;border-width:0;border-style:outset");
     ui->lineEditPwd->setStyleSheet("background:transparent;border-width:0;border-style:outset");
 
@@ -196,29 +196,45 @@ void MainWindow::httpPostFinished()
 
     emit sendData(clockIn);
 
-    qint32 nextIntervalInSec = 0;
-    QString workDay = QDateTime::currentDateTime().toString("ddd");
-    if(clockIn == QString("未刷卡")){
+    qint32 nextIntervalInSec = 0;   
+
+    if(clockIn == QString("未刷卡") && todayDoNotRemind == false){
+        QString workDay = QDateTime::currentDateTime().toString("ddd");
         if(remindOnlyWorkDay == true && (workDay == "周六" || workDay == "周日")){
 
         }else{
+            QDateTime remindStartTime;
+            QDateTime remindEndTime;
+            QString currentTimeStr = QDateTime::currentDateTime().toString("hh:mm:ss");
+            QDateTime currentTime = QDateTime::fromString(currentTimeStr, "hh:mm:ss");
 
-            //弹出提醒框
-            if(clockIn == "未刷卡" && todayDoNotRemind == false){
-               QDateTime remindTime = QDateTime::fromString(ui->comBoxRemindTime->currentText().trimmed(), "hh:mm:ss");
-               QString currentTimeStr = QDateTime::currentDateTime().toString("hh:mm:ss");
-               QDateTime currentTime = QDateTime::fromString(currentTimeStr, "hh:mm:ss");
-               if(currentTime >= remindTime){
-                    emit showRemindWindows();
-               }
+            if(ui->comboBoxRemindStartTime->currentIndex() != 0){
+                remindStartTime = QDateTime::fromString(ui->comboBoxRemindStartTime->currentText().trimmed(), "hh:mm:ss");
+            }else{
+                remindStartTime = QDateTime::fromString("08:30:00", "hh:mm:ss");
             }
-            nextIntervalInSec = 30;
+            if(ui->comboBoxRemindEndTime->currentIndex() != 0){
+                remindEndTime = QDateTime::fromString(ui->comboBoxRemindEndTime->currentText().trimmed(), "hh:mm:ss");
+            }else{
+                remindEndTime = QDateTime::fromString("10:00:00");
+            }
+            if(currentTime >= remindStartTime && currentTime < remindEndTime){
+                //弹出提醒框
+                emit showRemindWindows();
+                if(currentTime > QDateTime::fromString("11:00:00", "hh:mm:ss")){
+                    nextIntervalInSec = 300;
+                }else if(currentTime > QDateTime::fromString("09:30:00", "hh:mm:ss")){
+                    nextIntervalInSec = 60;
+                }else{
+                    nextIntervalInSec = 30;
+                }
+            }
         }
     }
 
     //计算下一次查询时间
     if(nextIntervalInSec == 0){
-        qint32 remindTimeInSec = QDateTime::fromString(ui->comBoxRemindTime->currentText().trimmed(), "hh:mm:ss").time().msecsSinceStartOfDay()/1000;
+        qint32 remindTimeInSec = QDateTime::fromString(ui->comboBoxRemindStartTime->currentText().trimmed(), "hh:mm:ss").time().msecsSinceStartOfDay()/1000;
         qint32 secsSinceStartOfDay = QTime::currentTime().msecsSinceStartOfDay()/1000;
         qint32 timerIntervalInSec = 24 * 3600 - secsSinceStartOfDay + remindTimeInSec;
         nextIntervalInSec = timerIntervalInSec;        
@@ -425,13 +441,16 @@ void MainWindow::readConfig(){
         data.clear();
         xml.subNode("remind", data);
         if(data.isEmpty() == false){
-            qDebug() << "remind: workdayonly" << data["workdayonly"] << ",remindtime" << data["remindtime"];
+            qDebug() << "remind: workdayonly" << data["workdayonly"] << ",remindstart" << data["remindstart"] << ",remindend" << data["remindend"];
             if(data["workdayonly"] == "true"){
                 workDayOnly = true;
             }
-            if(data["remindtime"].isEmpty() == false){
-                QString placeholders("     ");
-                ui->comBoxRemindTime->setCurrentText(placeholders + data["remindtime"]);
+            QString placeholders("     ");
+            if(data["remindstart"].isEmpty() == false){
+                ui->comboBoxRemindStartTime->setCurrentText(placeholders + data["remindstart"]);
+            }
+            if(data["remindend"].isEmpty() == false){
+                ui->comboBoxRemindEndTime->setCurrentText(placeholders + data["remindend"]);
             }
         }
 
@@ -487,7 +506,12 @@ void MainWindow::saveConfig()
     }
 
     data.clear();
-    data.insert("remindtime", ui->comBoxRemindTime->currentText().trimmed());
+    if(ui->comboBoxRemindStartTime->currentIndex() != 0){
+        data.insert("remindstart", ui->comboBoxRemindStartTime->currentText().trimmed());
+    }
+    if(ui->comboBoxRemindEndTime->currentIndex() != 0){
+        data.insert("remindend", ui->comboBoxRemindEndTime->currentText().trimmed());
+    }
     if(ui->checkBoxRemindOnlyWorkDay->isChecked()){
         data.insert("workdayonly", "true");
     }

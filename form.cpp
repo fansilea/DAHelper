@@ -22,7 +22,7 @@ Form::Form(QWidget *parent) :
     countDown = 10;
     connect(&timer, SIGNAL(timeout()), this, SLOT(on_hideRemindWindow()));
     timer.setInterval(1000);
-    hint = "点我今天不再提醒  ";
+    hint = "点我不再提醒  ";
     ui->pushButton->setText(hint + QString::number(countDown-1));
     //timer.start();
 }
