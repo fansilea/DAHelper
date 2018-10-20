@@ -5,6 +5,7 @@
 #include <QtNetwork>
 #include <QPalette>
 #include <QSystemTrayIcon>
+#include <QMenu>
 #include "dialog.h"
 #include "form.h"
 
@@ -41,7 +42,7 @@ private:
     //通知栏相关
     QMenu *trayMenu;
     QAction *quitAction;
-    QAction *settingAction;
+    QAction *disWinUpdateAction;
     QSystemTrayIcon *trayIcon;
 
     //定时查询打卡记录
@@ -65,6 +66,7 @@ private slots:
     void on_pushButtonTray_clicked();
     void on_activatedSysTrayIcon(QSystemTrayIcon::ActivationReason);
     void on_quitAction();
+    void on_disWinUpdate();
     void on_Timeout();
     void on_todayDoNotRemind();
     void on_newDayInit();
@@ -87,7 +89,7 @@ private slots:
 
 signals:
     void sendData(QString);
-    void showRemindWindows();
+    void showRemindWindow();
 
 private:
     void webAutoAuth();

@@ -55,4 +55,6 @@ DISTFILES +=
 
 LIBS += -luser32
 
+#QMAKE_LFLAGS += /MANIFESTUAC:\"level=\'requireAdministrator\' uiAccess=\'false\'\"
+
 RC_ICONS = logo.ico

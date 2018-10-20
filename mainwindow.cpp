@@ -51,21 +51,33 @@ void MainWindow::on_init()
     //向信息面板显示打卡查询结果
     connect(this, SIGNAL(sendData(QString)), &dlg, SLOT(receiveData(QString)));
     connect(&timer, SIGNAL(timeout()), this, SLOT(on_Timeout()));
-    connect(this, SIGNAL(showRemindWindows()), &form, SLOT(on_showRemindWindow()));
+    connect(this, SIGNAL(showRemindWindow()), &form, SLOT(on_showRemindWindow()));
     connect(&form, SIGNAL(todayDoNotRemind()), this, SLOT(on_todayDoNotRemind()));
     connect(&timer_newDay, SIGNAL(timeout()), this, SLOT(on_newDayInit()));
 
-    //右击任务栏通知图标退出选项
+    //任务栏通知图标选项
     if(QSystemTrayIcon::isSystemTrayAvailable()){
         quitAction = new QAction(this);
-        quitAction->setText(tr("退出"));
+        quitAction->setText("退出");
+        disWinUpdateAction = new QAction(this);
+        disWinUpdateAction->setText("禁止windows自动更新");
+        disWinUpdateAction->setChecked(false);
+        disWinUpdateAction->setCheckable(true);
 
         trayMenu = new QMenu((QWidget*)QApplication::desktop());
+        trayMenu->addAction(disWinUpdateAction);
         trayMenu->addAction(quitAction);
 
         trayIcon = new QSystemTrayIcon(this);
         trayIcon->setContextMenu(trayMenu);
         trayIcon->setToolTip(tr("打卡助手"));
+
+        trayIcon->setIcon(QIcon(":/images/tray.png"));
+        trayIcon->showMessage("打卡查询助手", "单击显示设置窗口，右击退出应用程序");
+        connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(on_activatedSysTrayIcon(QSystemTrayIcon::ActivationReason)));
+        connect(quitAction, SIGNAL(triggered()), this, SLOT(on_quitAction()));
+        connect(disWinUpdateAction, SIGNAL(triggered()), this, SLOT(on_disWinUpdate()));
+        trayIcon->setVisible(true);
     }
 
     ui->checkBoxPanel->setChecked(true);
@@ -81,17 +93,15 @@ void MainWindow::on_init()
     timer.setInterval(1000);
     timer.start();
     timer_newDay.setInterval(100);
-    timer_newDay.start();    
+    timer_newDay.start();
 
     //检查是否是开机启动
     QStringList arguments = QCoreApplication::arguments();
-    if(arguments.count() == 2 && arguments.at(1) == "start"){
-        ui->pushButtonTray->click();
-    }else{
+    if(arguments.count() == 1){
         this->show();
     }
 
-    //form.show();    
+    //form.show();
 }
 
 void MainWindow::startRequest()
@@ -194,9 +204,9 @@ void MainWindow::httpPostFinished()
         return;
     }
 
+    timer.stop();
     emit sendData(clockIn);
-
-    qint32 nextIntervalInSec = 0;   
+    qint32 nextIntervalInSec = 0;
 
     if(clockIn == QString("未刷卡") && todayDoNotRemind == false){
         QString workDay = QDateTime::currentDateTime().toString("ddd");
@@ -208,25 +218,21 @@ void MainWindow::httpPostFinished()
             QString currentTimeStr = QDateTime::currentDateTime().toString("hh:mm:ss");
             QDateTime currentTime = QDateTime::fromString(currentTimeStr, "hh:mm:ss");
 
-            if(ui->comboBoxRemindStartTime->currentIndex() != 0){
-                remindStartTime = QDateTime::fromString(ui->comboBoxRemindStartTime->currentText().trimmed(), "hh:mm:ss");
-            }else{
-                remindStartTime = QDateTime::fromString("08:30:00", "hh:mm:ss");
-            }
             if(ui->comboBoxRemindEndTime->currentIndex() != 0){
                 remindEndTime = QDateTime::fromString(ui->comboBoxRemindEndTime->currentText().trimmed(), "hh:mm:ss");
             }else{
-                remindEndTime = QDateTime::fromString("10:00:00");
+                remindEndTime = QDateTime::fromString("10:00:00", "hh:mm:ss");
             }
-            if(currentTime >= remindStartTime && currentTime < remindEndTime){
+
+            if(currentTime < remindEndTime){
                 //弹出提醒框
-                emit showRemindWindows();
+                emit showRemindWindow();
                 if(currentTime > QDateTime::fromString("11:00:00", "hh:mm:ss")){
+                    nextIntervalInSec = 600;
+                }else if(currentTime > QDateTime::fromString("09:15:00", "hh:mm:ss")){
                     nextIntervalInSec = 300;
-                }else if(currentTime > QDateTime::fromString("09:30:00", "hh:mm:ss")){
-                    nextIntervalInSec = 60;
                 }else{
-                    nextIntervalInSec = 30;
+                    nextIntervalInSec = 60;
                 }
             }
         }
@@ -234,31 +240,29 @@ void MainWindow::httpPostFinished()
 
     //计算下一次查询时间
     if(nextIntervalInSec == 0){
-        qint32 remindTimeInSec = QDateTime::fromString(ui->comboBoxRemindStartTime->currentText().trimmed(), "hh:mm:ss").time().msecsSinceStartOfDay()/1000;
+        qint32 remindStartTimeInSec;
+        if(ui->comboBoxRemindStartTime->currentIndex() != 0){
+            remindStartTimeInSec = QDateTime::fromString(ui->comboBoxRemindStartTime->currentText().trimmed(), "hh:mm:ss").time().msecsSinceStartOfDay()/1000;
+        }else{
+            remindStartTimeInSec = QDateTime::fromString("08:30:00", "hh:mm:ss").time().msecsSinceStartOfDay()/1000;
+        }
         qint32 secsSinceStartOfDay = QTime::currentTime().msecsSinceStartOfDay()/1000;
-        qint32 timerIntervalInSec = 24 * 3600 - secsSinceStartOfDay + remindTimeInSec;
-        nextIntervalInSec = timerIntervalInSec;        
+        qint32 timerIntervalInSec = 24 * 3600 - secsSinceStartOfDay + remindStartTimeInSec;
+        nextIntervalInSec = timerIntervalInSec;
     }
 
     qDebug() << "nextInterval" << nextIntervalInSec << "s";
     timer.setInterval(nextIntervalInSec * 1000);
+    timer.start();
 }
 
 void MainWindow::on_pushButtonTray_clicked()
 {
-    //右击任务栏通知图标退出选项
-    if(QSystemTrayIcon::isSystemTrayAvailable()){
-        this->hide();
-        trayIcon->setIcon(QIcon(":/images/tray.png"));
-        trayIcon->showMessage(tr("打卡查询助手"), tr("单击显示设置窗口，右击退出应用程序"));
-        connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(on_activatedSysTrayIcon(QSystemTrayIcon::ActivationReason)));
-        connect(quitAction, SIGNAL(triggered()), this, SLOT(on_quitAction()));
-        trayIcon->setVisible(true);
-    }
+    this->hide();
 }
 
 void MainWindow::on_activatedSysTrayIcon(QSystemTrayIcon::ActivationReason reson)
-{    
+{
     switch(reson){
         case QSystemTrayIcon::Trigger:
             this->showNormal();
@@ -275,6 +279,59 @@ void MainWindow::on_quitAction()
     qApp->quit();
 }
 
+void MainWindow::on_disWinUpdate()
+{
+    if(disWinUpdateAction->isChecked()){
+        QProcess process;
+        QString app = "wuauserv.exe";
+        QString all;
+
+        process.start("tasklist.exe", QStringList() << "/fi" << QString("imagename eq ") + app);
+        if(process.waitForFinished()){
+            all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
+            if(all.contains(app)){
+                process.start("taskkill.exe", QStringList() << "/im" << app << "/f");
+                if(process.waitForFinished()){
+                    all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
+                    if(all.contains("成功")){
+                        trayIcon->showMessage("温馨提示", "停止windows update应用");
+                    }
+                }
+            }
+        }
+
+        process.start("sc.exe", QStringList() << "query" << "wuauserv");
+        if(process.waitForFinished()){
+            all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
+            qDebug() << all;
+            if(all.contains("RUNNING")){
+                process.start("sc.exe", QStringList() << "stop" << "wuauserv");
+                process.waitForFinished();
+                process.start("sc.exe", QStringList() << "query" << "wuauserv");
+                process.waitForFinished();
+                all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
+                if(all.contains("STOPPED")){
+                    trayIcon->showMessage("温馨提示", "windows update服务已停止");
+                }
+            }
+            process.start("sc.exe", QStringList() << "qc" << "wuauserv");
+            process.waitForFinished();
+            all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
+            if(all.isEmpty() == false && all.contains("DISABLED") == false){
+                process.start("sc.exe", QStringList() << "config" << "wuauserv" << "start=" << "disabled");
+                process.waitForFinished();
+                process.start("sc.exe", QStringList() << "qc" << "wuauserv");
+                process.waitForFinished();
+                all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
+                if(all.contains("DISABLED")){
+                    trayIcon->showMessage("温馨提示", "windows update服务已禁用");
+                }
+            }
+        }
+    }
+    saveConfig();
+}
+
 void MainWindow::on_Timeout()
 {
     startRequest();
@@ -286,7 +343,7 @@ void MainWindow::on_pushButtonQuit_clicked()
 }
 
 void MainWindow::webAutoAuth()
-{   
+{
     if(ui->checkBoxWebAuth->isChecked() == false){
         return;
     }
@@ -330,13 +387,13 @@ void MainWindow::webAutoAuthFinished()
     QString webAuthReplyStr = codec->toUnicode(webLoginReply->readAll());
     if(webAuthReplyStr.contains("logon success")){
         qDebug() << "web auth success";
-        trayIcon->showMessage(tr("温馨提示"), tr("上网认证成功"));
-        ui->statusBar->showMessage("上网认证成功！", 3000);
+        trayIcon->showMessage("温馨提示", "上网认证成功");
+        //ui->statusBar->showMessage("上网认证成功！", 3000);
         webAuthed = true;
     }else{
         qDebug() << "web auth fail";
         webAuthed = false;
-        ui->statusBar->showMessage("上网认证失败！", 3000);
+        //ui->statusBar->showMessage("上网认证失败！", 3000);
     }
 }
 
@@ -468,6 +525,10 @@ void MainWindow::readConfig(){
             if(data["panel"] == "true"){
                 showPanel = true;
             }
+            if(data["windowsupdate"] == "false"){
+                disWinUpdateAction->setChecked(true);
+                on_disWinUpdate();
+            }
         }
     }else{
         showPanel = true;
@@ -524,11 +585,19 @@ void MainWindow::saveConfig()
     if(ui->checkBoxPanel->isChecked()){
         data.insert("panel", "true");
     }
+    if(disWinUpdateAction->isChecked()){
+        data.insert("windowsupdate", "false");
+    }
     if(data.isEmpty() == false){
         xml.addSubNode("other", data);
     }
 
     xml.save();
+
+    //更新timer倒计时
+    timer.stop();
+    timer.setInterval(5000);
+    timer.start();
 }
 
 void MainWindow::on_pushButtonSaveConfig_clicked()
