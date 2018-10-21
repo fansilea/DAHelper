@@ -58,7 +58,7 @@ void MainWindow::on_init()
     //任务栏通知图标选项
     if(QSystemTrayIcon::isSystemTrayAvailable()){
         quitAction = new QAction(this);
-        quitAction->setText("退出");
+        quitAction->setText("退出程序");
         disWinUpdateAction = new QAction(this);
         disWinUpdateAction->setText("禁止windows自动更新");
         disWinUpdateAction->setChecked(false);
@@ -211,7 +211,7 @@ void MainWindow::httpPostFinished()
     if(clockIn == QString("未刷卡") && todayDoNotRemind == false){
         QString workDay = QDateTime::currentDateTime().toString("ddd");
         if(remindOnlyWorkDay == true && (workDay == "周六" || workDay == "周日")){
-
+            emit sendData(QString("weekends"));
         }else{
             QDateTime remindStartTime;
             QDateTime remindEndTime;
@@ -443,7 +443,7 @@ void MainWindow::on_newDayInit()
     todayDoNotRemind = false;
     remindOnlyWorkDay = false;
     webAutoAuth();
-    emit sendData("?");
+    emit sendData("weekdays");
     qint32 currentSecs = QDateTime::currentDateTime().time().msecsSinceStartOfDay() / 1000;
     timer_newDay.setInterval((24*3600-currentSecs+7*3600)*1000);
     timer_newDay.start();

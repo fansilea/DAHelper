@@ -22,7 +22,7 @@ Dialog::Dialog(QWidget *parent) :
     ui->labelClockIn->setStyleSheet("color:white");
     ui->labelClockOff->setStyleSheet("color:yellow");
     ui->labelUrl->setOpenExternalLinks(true);
-    ui->labelUrl->setText(tr("<style>a{text-decoration: none} </style><a href=\"http://personalinfo.sunmedia.com.cn/Attendance.aspx\">详情"));
+    ui->labelUrl->setText(tr("<style>a{text-decoration: none} </style><a href=\"http://personalinfo.sunmedia.com.cn/Attendance.aspx\">查询"));
 
     this->setGeometry(QApplication::desktop()->width()-this->width()+10, 30, width(), height());
     HWND hdesktop = findDesktopIconWnd();
@@ -56,6 +56,11 @@ void Dialog::receiveData(QString data)
     if(data == "?"){
         ui->labelClockIn->setText("???");
         ui->labelClockOff->setText("???");
+        return;
+    }
+    if(data == "weekdays"){
+        ui->labelClockIn->setText("非工作日");
+        ui->labelClockOff->setText("手动查询");
         return;
     }
 

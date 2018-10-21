@@ -9,8 +9,8 @@ int main(int argc, char *argv[])
 
     MainWindow w;
 
-    //隐藏边框
-    w.setWindowFlags(Qt::FramelessWindowHint);
+    //隐藏边框且总是显示在最前面
+    w.setWindowFlags(Qt::FramelessWindowHint|Qt::WindowStaysOnTopHint);
 
     //设置窗口背景图片
     w.setStyleSheet("QMainWindow#MainWindow{border-image: url(:/images/bg.jpg)}");
