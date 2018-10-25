@@ -7,6 +7,7 @@
 QT       += core gui
 QT       += network
 QT       += xml
+QT       += multimedia
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -55,6 +56,6 @@ DISTFILES +=
 
 LIBS += -luser32
 
-#QMAKE_LFLAGS += /MANIFESTUAC:\"level=\'requireAdministrator\' uiAccess=\'false\'\"
+QMAKE_LFLAGS += /MANIFESTUAC:\"level=\'requireAdministrator\' uiAccess=\'false\'\"
 
 RC_ICONS = logo.ico

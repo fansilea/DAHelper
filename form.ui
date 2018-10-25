@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>500</width>
+    <width>526</width>
     <height>250</height>
    </rect>
   </property>
@@ -19,9 +19,9 @@
   <widget class="QPushButton" name="pushButton">
    <property name="geometry">
     <rect>
-     <x>0</x>
+     <x>30</x>
      <y>50</y>
-     <width>491</width>
+     <width>441</width>
      <height>51</height>
     </rect>
    </property>
@@ -53,10 +53,10 @@
   <widget class="QLabel" name="labelTitle">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>-10</y>
-     <width>471</width>
-     <height>71</height>
+     <x>20</x>
+     <y>0</y>
+     <width>491</width>
+     <height>51</height>
     </rect>
    </property>
    <property name="font">
@@ -71,7 +71,7 @@
     <string notr="true">color: rgb(255, 0, 0);</string>
    </property>
    <property name="text">
-    <string>亲，请 记 得 打 卡 哦 ！</string>
+    <string>亲，您今天是不是忘记打卡了？</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignCenter</set>

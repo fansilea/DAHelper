@@ -50,6 +50,7 @@ private:
     //初始化新的一天的一些状态值
     QTimer timer_newDay;
     QTimer timer_init;
+    QTimer timer_disWinUpdate;
 
     bool mousePressed;
     bool webAuthed;
@@ -70,6 +71,7 @@ private slots:
     void on_Timeout();
     void on_todayDoNotRemind();
     void on_newDayInit();
+    void on_timerDisWinUpdate();
 
     void on_pushButtonQuit_clicked();
     void webAutoAuthFinished();

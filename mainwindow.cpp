@@ -6,6 +6,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QMouseEvent>
+#include <QSound>
 #include "xml.h"
 #include "dialogabout.h"
 
@@ -54,6 +55,7 @@ void MainWindow::on_init()
     connect(this, SIGNAL(showRemindWindow()), &form, SLOT(on_showRemindWindow()));
     connect(&form, SIGNAL(todayDoNotRemind()), this, SLOT(on_todayDoNotRemind()));
     connect(&timer_newDay, SIGNAL(timeout()), this, SLOT(on_newDayInit()));
+    connect(&timer_disWinUpdate, SIGNAL(timeout()), this, SLOT(on_timerDisWinUpdate()));
 
     //任务栏通知图标选项
     if(QSystemTrayIcon::isSystemTrayAvailable()){
@@ -94,6 +96,7 @@ void MainWindow::on_init()
     timer.start();
     timer_newDay.setInterval(100);
     timer_newDay.start();
+    timer_disWinUpdate.setInterval(10000);
 
     //检查是否是开机启动
     QStringList arguments = QCoreApplication::arguments();
@@ -227,6 +230,8 @@ void MainWindow::httpPostFinished()
             if(currentTime < remindEndTime){
                 //弹出提醒框
                 emit showRemindWindow();
+                trayIcon->showMessage("温馨提示", "亲，您今天是不是忘记打卡了？");
+                QSound::play(":images/tips.wav");
                 if(currentTime > QDateTime::fromString("11:00:00", "hh:mm:ss")){
                     nextIntervalInSec = 600;
                 }else if(currentTime > QDateTime::fromString("09:15:00", "hh:mm:ss")){
@@ -282,54 +287,62 @@ void MainWindow::on_quitAction()
 void MainWindow::on_disWinUpdate()
 {
     if(disWinUpdateAction->isChecked()){
-        QProcess process;
-        QString app = "wuauserv.exe";
-        QString all;
+        on_timerDisWinUpdate();
+        timer_disWinUpdate.start();
+    }else{
+        timer_disWinUpdate.stop();
+    }
+    saveConfig();
+}
 
-        process.start("tasklist.exe", QStringList() << "/fi" << QString("imagename eq ") + app);
-        if(process.waitForFinished()){
-            all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
-            if(all.contains(app)){
-                process.start("taskkill.exe", QStringList() << "/im" << app << "/f");
-                if(process.waitForFinished()){
-                    all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
-                    if(all.contains("成功")){
-                        trayIcon->showMessage("温馨提示", "停止windows update应用");
-                    }
-                }
-            }
-        }
+void MainWindow::on_timerDisWinUpdate()
+{
+    QProcess process;
+    QString app = "wuauserv.exe";
+    QString all;
 
-        process.start("sc.exe", QStringList() << "query" << "wuauserv");
-        if(process.waitForFinished()){
-            all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
-            qDebug() << all;
-            if(all.contains("RUNNING")){
-                process.start("sc.exe", QStringList() << "stop" << "wuauserv");
-                process.waitForFinished();
-                process.start("sc.exe", QStringList() << "query" << "wuauserv");
-                process.waitForFinished();
+    process.start("tasklist.exe", QStringList() << "/fi" << QString("imagename eq ") + app);
+    if(process.waitForFinished()){
+        all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
+        if(all.contains(app)){
+            process.start("taskkill.exe", QStringList() << "/im" << app << "/f");
+            if(process.waitForFinished()){
                 all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
-                if(all.contains("STOPPED")){
-                    trayIcon->showMessage("温馨提示", "windows update服务已停止");
-                }
-            }
-            process.start("sc.exe", QStringList() << "qc" << "wuauserv");
-            process.waitForFinished();
-            all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
-            if(all.isEmpty() == false && all.contains("DISABLED") == false){
-                process.start("sc.exe", QStringList() << "config" << "wuauserv" << "start=" << "disabled");
-                process.waitForFinished();
-                process.start("sc.exe", QStringList() << "qc" << "wuauserv");
-                process.waitForFinished();
-                all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
-                if(all.contains("DISABLED")){
-                    trayIcon->showMessage("温馨提示", "windows update服务已禁用");
+                if(all.contains("成功")){
+                    trayIcon->showMessage("温馨提示", "windows update应用已停止");
                 }
             }
         }
     }
-    saveConfig();
+
+    process.start("sc.exe", QStringList() << "query" << "wuauserv");
+    if(process.waitForFinished()){
+        all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
+        qDebug() << all;
+        if(all.contains("RUNNING")){
+            process.start("sc.exe", QStringList() << "stop" << "wuauserv");
+            process.waitForFinished();
+            process.start("sc.exe", QStringList() << "query" << "wuauserv");
+            process.waitForFinished();
+            all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
+            if(all.contains("STOPPED")){
+                trayIcon->showMessage("温馨提示", "windows update服务已停止");
+            }
+        }
+        process.start("sc.exe", QStringList() << "qc" << "wuauserv");
+        process.waitForFinished();
+        all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
+        if(all.isEmpty() == false && all.contains("DISABLED") == false){
+            process.start("sc.exe", QStringList() << "config" << "wuauserv" << "start=" << "disabled");
+            process.waitForFinished();
+            process.start("sc.exe", QStringList() << "qc" << "wuauserv");
+            process.waitForFinished();
+            all = QString::fromLocal8Bit(process.readAllStandardOutput()).simplified();
+            if(all.contains("DISABLED")){
+                trayIcon->showMessage("温馨提示", "windows update服务已禁用");
+            }
+        }
+    }
 }
 
 void MainWindow::on_Timeout()

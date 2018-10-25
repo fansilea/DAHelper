@@ -4,5 +4,6 @@
         <file>bg.jpg</file>
         <file>btn.png</file>
         <file>bg2.jpg</file>
+        <file>tips.wav</file>
     </qresource>
 </RCC>
