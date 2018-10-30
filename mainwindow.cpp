@@ -230,7 +230,7 @@ void MainWindow::httpPostFinished()
             if(currentTime < remindEndTime){
                 //弹出提醒框
                 emit showRemindWindow();
-                trayIcon->showMessage("温馨提示", "亲，您今天是不是忘记打卡了？");
+                trayIcon->showMessage("温馨提示", "亲，您今天忘记打卡了!");
                 QSound::play(":images/tips.wav");
                 if(currentTime > QDateTime::fromString("11:00:00", "hh:mm:ss")){
                     nextIntervalInSec = 600;
