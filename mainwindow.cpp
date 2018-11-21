@@ -26,7 +26,7 @@ MainWindow::MainWindow(QWidget *parent) :
     manager = new QNetworkAccessManager(this);
 
     connect(&timer_init, SIGNAL(timeout()), this, SLOT(on_init()));
-    timer_init.setInterval(10);
+    timer_init.setInterval(1000);
     timer_init.start();
 }
 
@@ -92,7 +92,7 @@ void MainWindow::on_init()
     //读取配置，恢复界面上次设置状态
     readConfig();
 
-    timer.setInterval(1000);
+    timer.setInterval(30000);
     timer.start();
     timer_newDay.setInterval(100);
     timer_newDay.start();
@@ -115,15 +115,21 @@ void MainWindow::startRequest()
 
 void MainWindow::httpGetFinished()
 {
-    int statusCode = getReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     if(getReply->error() != QNetworkReply::NoError){
-        qDebug() << "get reply error, status code:" << statusCode;
+        qDebug() << "get reply error:" << getReply->errorString();
+        trayIcon->showMessage("错误", getReply->errorString());
+        getReply->deleteLater();
         return;
     }
 
     QTextCodec *codec = QTextCodec::codecForName("utf8");
     QString all = codec->toUnicode(getReply->readAll());
     getReply->deleteLater();
+
+    if(all.isEmpty()){
+        trayIcon->showMessage("错误", "no data");
+        return;
+    }
 
     //find today NO.
     QString findTodayNoSubStr("#FFCC66\" width=\"14%\"><font face=\"Verdana\" color=\"White\" size=\"1\"><a href=\"javascript:__doPostBack('Calendar1','");
@@ -169,10 +175,9 @@ void MainWindow::httpGetFinished()
 
 void MainWindow::httpPostFinished()
 {
-    int statusCode = postReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
     if(postReply->error() != QNetworkReply::NoError){
-        qDebug() << "post reply error, status code:" << statusCode;
+        qDebug() << "post reply error:" << postReply->errorString();
+        trayIcon->showMessage("错误", postReply->errorString());
         return;
     }
 
@@ -212,8 +217,9 @@ void MainWindow::httpPostFinished()
     qint32 nextIntervalInSec = 0;
 
     if(clockIn == QString("未刷卡") && todayDoNotRemind == false){
-        QString workDay = QDateTime::currentDateTime().toString("ddd");
-        if(remindOnlyWorkDay == true && (workDay == "周六" || workDay == "周日")){
+        QLocale locale = QLocale::English;
+        QString workDay = locale.toString(QDateTime::currentDateTime(), QString("ddd"));
+        if(remindOnlyWorkDay == true && (workDay == "Sat" || workDay == "Sun")){
             emit sendData(QString("weekends"));
         }else{
             QDateTime remindStartTime;
@@ -449,16 +455,16 @@ void MainWindow::on_todayDoNotRemind()
 
 void MainWindow::on_newDayInit()
 {
-    //每天早上7:00更新
-    qDebug() << "new day";
+    //每天早00:00更新
+    qDebug() << "reset";
     timer_newDay.stop();
     webAuthed = false;
     todayDoNotRemind = false;
     remindOnlyWorkDay = false;
     webAutoAuth();
-    emit sendData("weekdays");
+    emit sendData("?");
     qint32 currentSecs = QDateTime::currentDateTime().time().msecsSinceStartOfDay() / 1000;
-    timer_newDay.setInterval((24*3600-currentSecs+7*3600)*1000);
+    timer_newDay.setInterval((24*3600-currentSecs + 60)*1000);
     timer_newDay.start();
 }
 

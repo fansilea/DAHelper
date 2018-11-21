@@ -46,7 +46,7 @@
     <string notr="true"/>
    </property>
    <property name="text">
-    <string>???</string>
+    <string/>
    </property>
    <property name="alignment">
     <set>Qt::AlignCenter</set>
@@ -136,7 +136,7 @@
     </font>
    </property>
    <property name="text">
-    <string>???</string>
+    <string/>
    </property>
    <property name="alignment">
     <set>Qt::AlignHCenter|Qt::AlignTop</set>

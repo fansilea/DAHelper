@@ -54,8 +54,7 @@ void Dialog::receiveData(QString data)
     QString clockOffStr;
 
     if(data == "?"){
-        ui->labelClockIn->setText("???");
-        ui->labelClockOff->setText("???");
+        ui->labelClockIn->setText("待查询");
         return;
     }
     if(data == "weekdays"){
@@ -70,7 +69,7 @@ void Dialog::receiveData(QString data)
             clockOffStr = "18:00:00";
     }else if(QDateTime::fromString(data, "hh:mm:ss") < QDateTime::fromString(QString("08:46:00"), "hh:mm:ss")){
             clockOffStr="18:00:00";
-    }else if(QDateTime::fromString(data, "hh:mm:ss") < QDateTime::fromString(QString("09:00:00"), "hh:mm:ss")){
+    }else if(QDateTime::fromString(data, "hh:mm:ss") < QDateTime::fromString(QString("09:01:00"), "hh:mm:ss")){
             clockOffStr="18:15:00";
     }else{
         clockOffStr="18:30:00";
