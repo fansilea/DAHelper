@@ -13,6 +13,9 @@
     <height>300</height>
    </rect>
   </property>
+  <property name="cursor">
+   <cursorShape>ArrowCursor</cursorShape>
+  </property>
   <property name="mouseTracking">
    <bool>false</bool>
   </property>
@@ -68,6 +71,9 @@
    <bool>false</bool>
   </property>
   <widget class="QWidget" name="centralWidget">
+   <property name="cursor">
+    <cursorShape>ArrowCursor</cursorShape>
+   </property>
    <widget class="QCheckBox" name="checkBoxPanel">
     <property name="geometry">
      <rect>
@@ -366,7 +372,7 @@
      <string/>
     </property>
     <property name="inputMethodHints">
-     <set>Qt::ImhNoAutoUppercase|Qt::ImhNoPredictiveText|Qt::ImhSensitiveData</set>
+     <set>Qt::ImhNone</set>
     </property>
     <property name="inputMask">
      <string/>
@@ -378,7 +384,7 @@
      <bool>false</bool>
     </property>
     <property name="echoMode">
-     <enum>QLineEdit::PasswordEchoOnEdit</enum>
+     <enum>QLineEdit::Normal</enum>
     </property>
     <property name="cursorPosition">
      <number>0</number>

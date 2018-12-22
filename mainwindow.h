@@ -29,7 +29,7 @@ private:
     QNetworkReply *postReply;
     QNetworkReply *webLoginReply;
 
-    Dialog dlg;
+    Dialog* pDlg;
     Form form;
 
     QString name;
@@ -43,6 +43,7 @@ private:
     QMenu *trayMenu;
     QAction *quitAction;
     QAction *disWinUpdateAction;
+    QAction *displayBoardPositionAdjust;
     QSystemTrayIcon *trayIcon;
 
     //定时查询打卡记录
@@ -72,6 +73,7 @@ private slots:
     void on_todayDoNotRemind();
     void on_newDayInit();
     void on_timerDisWinUpdate();
+    void on_displayBoardPositionAdjust();
 
     void on_pushButtonQuit_clicked();
     void webAutoAuthFinished();

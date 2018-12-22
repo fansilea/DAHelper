@@ -24,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     manager = new QNetworkAccessManager(this);
-
+    pDlg = new Dialog(this);
     connect(&timer_init, SIGNAL(timeout()), this, SLOT(on_init()));
     timer_init.setInterval(1000);
     timer_init.start();
@@ -40,6 +40,7 @@ MainWindow::~MainWindow()
         delete trayMenu;
         delete quitAction;
     }
+    delete pDlg;
     delete manager;
     delete ui;
 }
@@ -50,7 +51,7 @@ void MainWindow::on_init()
     timer_init.stop();
 
     //向信息面板显示打卡查询结果
-    connect(this, SIGNAL(sendData(QString)), &dlg, SLOT(receiveData(QString)));
+    connect(this, SIGNAL(sendData(QString)), pDlg, SLOT(receiveData(QString)));
     connect(&timer, SIGNAL(timeout()), this, SLOT(on_Timeout()));
     connect(this, SIGNAL(showRemindWindow()), &form, SLOT(on_showRemindWindow()));
     connect(&form, SIGNAL(todayDoNotRemind()), this, SLOT(on_todayDoNotRemind()));
@@ -65,9 +66,14 @@ void MainWindow::on_init()
         disWinUpdateAction->setText("禁止windows自动更新");
         disWinUpdateAction->setChecked(false);
         disWinUpdateAction->setCheckable(true);
+        displayBoardPositionAdjust = new QAction(this);
+        displayBoardPositionAdjust->setText("主显示器在右");
+        displayBoardPositionAdjust->setChecked(false);
+        displayBoardPositionAdjust->setCheckable(true);
 
         trayMenu = new QMenu((QWidget*)QApplication::desktop());
         trayMenu->addAction(disWinUpdateAction);
+        trayMenu->addAction(displayBoardPositionAdjust);
         trayMenu->addAction(quitAction);
 
         trayIcon = new QSystemTrayIcon(this);
@@ -79,6 +85,7 @@ void MainWindow::on_init()
         connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(on_activatedSysTrayIcon(QSystemTrayIcon::ActivationReason)));
         connect(quitAction, SIGNAL(triggered()), this, SLOT(on_quitAction()));
         connect(disWinUpdateAction, SIGNAL(triggered()), this, SLOT(on_disWinUpdate()));
+        connect(displayBoardPositionAdjust, SIGNAL(triggered()), this, SLOT(on_displayBoardPositionAdjust()));
         trayIcon->setVisible(true);
     }
 
@@ -88,6 +95,8 @@ void MainWindow::on_init()
     ui->comboBoxRemindStartTime->setEditText("08:30:00");
     ui->lineEditName->setStyleSheet("background:transparent;border-width:0;border-style:outset");
     ui->lineEditPwd->setStyleSheet("background:transparent;border-width:0;border-style:outset");
+
+    pDlg->setGeometry(this->pos().x()+this->width()+10, this->pos().y(), pDlg->width(), pDlg->height());
 
     //读取配置，恢复界面上次设置状态
     readConfig();
@@ -102,9 +111,9 @@ void MainWindow::on_init()
     QStringList arguments = QCoreApplication::arguments();
     if(arguments.count() == 1){
         this->show();
+    }else{
+        pDlg->embedDesktop();
     }
-
-    //form.show();
 }
 
 void MainWindow::startRequest()
@@ -117,7 +126,7 @@ void MainWindow::httpGetFinished()
 {
     if(getReply->error() != QNetworkReply::NoError){
         qDebug() << "get reply error:" << getReply->errorString();
-        trayIcon->showMessage("错误", getReply->errorString());
+        trayIcon->showMessage("Error", getReply->errorString());
         getReply->deleteLater();
         return;
     }
@@ -127,7 +136,7 @@ void MainWindow::httpGetFinished()
     getReply->deleteLater();
 
     if(all.isEmpty()){
-        trayIcon->showMessage("错误", "no data");
+        trayIcon->showMessage("Error", "no data");
         return;
     }
 
@@ -177,7 +186,7 @@ void MainWindow::httpPostFinished()
 {
     if(postReply->error() != QNetworkReply::NoError){
         qDebug() << "post reply error:" << postReply->errorString();
-        trayIcon->showMessage("错误", postReply->errorString());
+        trayIcon->showMessage("Error", postReply->errorString());
         return;
     }
 
@@ -270,6 +279,7 @@ void MainWindow::httpPostFinished()
 void MainWindow::on_pushButtonTray_clicked()
 {
     this->hide();
+    pDlg->embedDesktop();
 }
 
 void MainWindow::on_activatedSysTrayIcon(QSystemTrayIcon::ActivationReason reson)
@@ -283,6 +293,12 @@ void MainWindow::on_activatedSysTrayIcon(QSystemTrayIcon::ActivationReason reson
         default:
             break;
     }
+}
+
+void MainWindow::on_displayBoardPositionAdjust()
+{
+    pDlg->displayBoardPositionAdjust(displayBoardPositionAdjust->isChecked());
+    saveConfig();
 }
 
 void MainWindow::on_quitAction()
@@ -441,9 +457,9 @@ void MainWindow::on_checkBoxPanel_stateChanged(int arg1)
     (void)arg1;
 
     if(ui->checkBoxPanel->isChecked()){
-        dlg.show();
+        pDlg->show();
     }else{
-        dlg.hide();
+        pDlg->hide();
     }
 
 }
@@ -548,6 +564,13 @@ void MainWindow::readConfig(){
                 disWinUpdateAction->setChecked(true);
                 on_disWinUpdate();
             }
+            if(data["displayboardadjust"] == "true"){
+                displayBoardPositionAdjust->setChecked(true);
+                on_displayBoardPositionAdjust();
+            }
+            if(data["panelx"].isEmpty() != true && data["panely"].isEmpty() != true){
+                pDlg->move(data["panelx"].toInt(), data["panely"].toInt());
+            }
         }
     }else{
         showPanel = true;
@@ -607,6 +630,13 @@ void MainWindow::saveConfig()
     if(disWinUpdateAction->isChecked()){
         data.insert("windowsupdate", "false");
     }
+    if(displayBoardPositionAdjust->isChecked()){
+        data.insert("displayboardadjust", "true");
+    }
+    QPoint point;
+    pDlg->pointGet(point);
+    data.insert("panelx", QString::number(point.x()));
+    data.insert("panely", QString::number(point.y()));
     if(data.isEmpty() == false){
         xml.addSubNode("other", data);
     }

@@ -1,8 +1,9 @@
-﻿#include "dialog.h"
-#include "ui_dialog.h"
-#include <QDesktopWidget>
+﻿#include <QDesktopWidget>
 #include <QDebug>
 #include <QDateTime>
+#include <QMouseEvent>
+#include "dialog.h"
+#include "ui_dialog.h"
 
 //避免msvc编译时将utf8转为GB2312造成显示中文乱码
 #if _MSC_VER >= 1600
@@ -16,32 +17,25 @@ Dialog::Dialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::Dialog)
 {
+    displayBoardAdjust = false;
+    embed = false;
+    checkIn = "待查询";
+    checkOut = "";
+    showCheckIn = true;
+    timer.setInterval(10); //10s
+    connect(&timer, SIGNAL(timeout()), this, SLOT(on_Timeout()));
     ui->setupUi(this);
-    ui->labelOn->setStyleSheet("color:white");
-    ui->labelOff->setStyleSheet("color:yellow");
-    ui->labelClockIn->setStyleSheet("color:white");
-    ui->labelClockOff->setStyleSheet("color:yellow");
-    ui->labelUrl->setOpenExternalLinks(true);
-    ui->labelUrl->setText(tr("<style>a{text-decoration: none} </style><a href=\"http://personalinfo.sunmedia.com.cn/Attendance.aspx\">查询"));
-
-    this->setGeometry(QApplication::desktop()->width()-this->width()+10, 30, width(), height());
-    HWND hdesktop = findDesktopIconWnd();
-    if(hdesktop){
-        WId wid = this->winId();
-        SetParent((HWND)wid, hdesktop);
-    }
-
-//    if (QSysInfo::windowsVersion() == QSysInfo::WV_WINDOWS10) {
-//        QPalette pal;
-//        pal.setColor(QPalette::Background, QColor(0, 0, 0, 60));
-//        setPalette(pal);
-//    }
+    ui->label->setOpenExternalLinks(true);
+    ui->label->setStyleSheet("background-color:rgb(46,47,48)");
+    QRect rect = QApplication::desktop()->screenGeometry(1);
+    adjustOffset = abs(rect.x());
 
     if (QSysInfo::windowsVersion() == QSysInfo::WV_WINDOWS7) {
-        //setWindowOpacity(0);
         //this->setAttribute(Qt::WA_TranslucentBackground, true);
         this->setWindowFlags(Qt::FramelessWindowHint|Qt::Tool);
     }
+
+    timer.start();
 }
 
 Dialog::~Dialog()
@@ -49,36 +43,118 @@ Dialog::~Dialog()
     delete ui;
 }
 
+void Dialog::on_Timeout()
+{
+    QString styleColorPink  = "<style>a{text-decoration: none;background: transparent; color: rgb(255, 0, 255)} </style>";
+    QString styleColorGreen = "<style>a{text-decoration: none;background: transparent; color: rgb(0, 255, 0)} </style>";
+    QString styleUrl = "<a href=\"http://personalinfo.sunmedia.com.cn/Attendance.aspx\">";
+
+    if(timer.interval() == 10){
+        timer.setInterval(10000);
+    }
+
+    if(showCheckIn || checkOut.isEmpty()){
+        if(checkIn.contains("查询") == false){
+            showCheckIn = false;
+        }
+        ui->label->setText(styleColorPink + styleUrl + checkIn);
+        ui->label->setToolTip("上班打卡时间");
+    }else{
+        showCheckIn = true;
+        ui->label->setText(styleColorGreen + styleUrl + checkOut);
+        ui->label->setToolTip("预计下班时间");
+    }
+}
+
+void Dialog::embedDesktop()
+{
+    HWND hdesktop = findDesktopIconWnd();
+    if(hdesktop){
+        WId wid = this->winId();
+        SetParent((HWND)wid, hdesktop);
+        embed = true;
+        if(displayBoardAdjust){
+            QPoint point(this->pos());
+            point.setX(point.x()+adjustOffset);
+            this->move(point);
+        }
+    }
+}
+
 void Dialog::receiveData(QString data)
 {
     QString clockOffStr;
 
     if(data == "?"){
-        ui->labelClockIn->setText("待查询");
+        checkIn = "待查询";
+        checkOut = "";
         return;
     }
     if(data == "weekdays"){
-        ui->labelClockIn->setText("非工作日");
-        ui->labelClockOff->setText("手动查询");
+        checkIn  = "手动查询";
+        checkOut = "";
         return;
     }
 
     if(data == "未刷卡"){
-        clockOffStr="???";
     }else if(data == "正常"){
-            clockOffStr = "18:00:00";
+            checkOut = "18:00:00";
     }else if(QDateTime::fromString(data, "hh:mm:ss") < QDateTime::fromString(QString("08:46:00"), "hh:mm:ss")){
-            clockOffStr="18:00:00";
+            checkOut="18:00:00";
     }else if(QDateTime::fromString(data, "hh:mm:ss") < QDateTime::fromString(QString("09:01:00"), "hh:mm:ss")){
-            clockOffStr="18:15:00";
+            checkOut="18:15:00";
     }else{
-        clockOffStr="18:30:00";
+        checkOut="18:30:00";
     }
 
-    qDebug() << "上班时间" << data << ",下班时间" << clockOffStr;
+    checkIn = data;
+    qDebug() << "上班时间" << checkIn << ",下班时间" << checkOut;
+}
 
-    ui->labelClockIn->setText(data);
-    ui->labelClockOff->setText(clockOffStr);
+void Dialog::mousePressEvent(QMouseEvent *event)
+{
+    mousePressed = true;
+    mousePressedPos = event->pos();
+}
+
+void Dialog::mouseReleaseEvent(QMouseEvent *event)
+{
+    (void*)event;
+    mousePressed = false;
+}
+
+void Dialog::mouseMoveEvent(QMouseEvent *event)
+{
+    if(mousePressed && (event->buttons() == Qt::LeftButton)){
+        newPos.setX(QCursor::pos().x());
+        newPos.setY(QCursor::pos().y());
+        newPos -= mousePressedPos;
+        if(displayBoardAdjust && embed){
+            newPos.setX(newPos.x()+adjustOffset);
+        }
+        this->move(newPos);
+        qDebug() << newPos;
+    }
+}
+
+void Dialog::displayBoardPositionAdjust(bool adjust)
+{
+    if(embed){
+        QPoint point;
+        point.setX(QApplication::desktop()->width()*0.75);
+        point.setY(QApplication::desktop()->height()*0.25);
+        this->move(point);
+    }
+    displayBoardAdjust = adjust;    
+}
+
+void Dialog::pointGet(QPoint& point)
+{
+    if(embed){;
+        point = newPos;
+    }else{
+        point = this->pos();
+    }
 }
 
 static BOOL enumUserWindowsCB(HWND hwnd, LPARAM lParam)
@@ -96,7 +172,7 @@ static BOOL enumUserWindowsCB(HWND hwnd, LPARAM lParam)
 
     HWND* resultHwnd = (HWND*)lParam;
     *resultHwnd = targetWnd;
-    //*resultHwnd = hwnd;//set to workerW
+
     return FALSE;
 }
 
