@@ -68,15 +68,17 @@ void Dialog::on_Timeout()
 
 void Dialog::embedDesktop()
 {
-    HWND hdesktop = findDesktopIconWnd();
-    if(hdesktop){
-        WId wid = this->winId();
-        SetParent((HWND)wid, hdesktop);
-        embed = true;
-        if(displayBoardAdjust){
-            QPoint point(this->pos());
-            point.setX(point.x()+adjustOffset);
-            this->move(point);
+    if(embed == false){
+        HWND hdesktop = findDesktopIconWnd();
+        if(hdesktop){
+            WId wid = this->winId();
+            SetParent((HWND)wid, hdesktop);
+            embed = true;
+            if(displayBoardAdjust){
+                QPoint point(this->pos());
+                point.setX(point.x()+adjustOffset);
+                this->move(point);
+            }
         }
     }
 }
